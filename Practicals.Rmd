@@ -1,0 +1,428 @@
+---
+title: 'Practical in Polygenic Risk Scoring'
+author: "Palle Duun Rohde, Izel Fourie Sørensen & Peter Sørensen"
+date: "`r Sys.Date()`"
+bibliography: qg2021.bib
+biblio-style: apalike
+link-citations: yes
+output:
+  pdf_document:
+    dev: png
+    includes:
+      in_header: preamble.tex
+  html_document:
+    includes:
+      in_header: mathjax_header.html
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, tidy.opts = list(width.cutoff = 60), tidy = TRUE) 
+```
+
+# Introduction
+In this practical we will be perform polygenic risk scoring based on simulated data. The data consist of phenotypes for a disease, covariables, and genetic marker data. The practicals will be a mix of theoretical and practical exercises in R that are used for illustrating/applying the theory presented in the lecture. 
+
+* Practical 1: Use R for downloading data
+* Practical 2: Explore phenotype data
+* Practical 3: Prepare genotype data for polygenic risk scoring
+* Practical 4: Polygenic risk scoring using clumping and thresholding
+* Practical 5: Polygenic risk scoring using Bayesian linear regression models
+
+This tutorial provides a step-by-step guide to performing basic polygenic risk score (PRS) analyses. The aim of this tutorial is to provide a simple introduction of PRS analyses to those new to PRS, while equipping existing users with a better understanding of the processes and implementation "underneath the hood" of popular PRS software.
+
+The practical is based on the R package `qgg`.
+
+This package provides an infrastructure for efficient processing of large-scale genetic and phenotypic data including core functions for: 
+
+* fitting linear mixed models 
+* constructing genetic relationship matrices 
+* estimating genetic parameters (heritability and correlation) 
+* performing genomic prediction and genetic risk profiling 
+* single or multi-marker association analyses
+
+Data used in this tutorial are simulated and intended for demonstration purposes only. 
+
+To follow the tutorial, you will need the following installed:
+
+* R (version $=>$ 4.2)
+* qgg (version $=>$ 1.1.1)
+
+We assume you have basic knownledges on how to use R. If you are unfamiliar with any of those, you can refer to the following online resources:
+
+### Installation of the R package qgg:
+
+You can install qgg from CRAN with:
+
+```{r,  eval=FALSE, echo=TRUE}
+install.packages("qgg")
+```
+
+You can install the latest version of qgg from github with:
+
+```{r,  eval=FALSE, echo=TRUE}
+library(devtools)
+devtools::install_github("psoerensen/qgg")
+```
+
+
+\newpage
+
+# Practical 1: Downloading the data using R
+
+
+### load required packages 
+```{r,  eval=TRUE, echo=TRUE}
+library(data.table)
+```
+
+Read files directly from website (github repository)
+
+```{r,  eval=FALSE, echo=TRUE}
+pheno <- fread(input="https://github.com/psoerensen/qgdata/raw/main/simulated_human_data/human.pheno", data.table=FALSE)
+```
+
+```{r,  eval=FALSE, echo=TRUE}
+covar <- fread(input="https://github.com/psoerensen/qgdata/raw/main/simulated_human_data/human.covar", data.table=FALSE)
+```
+
+
+Create directory for downloading files
+
+```{r,  eval=FALSE, echo=TRUE}
+dir.create("C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course")
+```
+
+Set working directory for the downloaded files
+
+```{r,  eval=TRUE, echo=TRUE}
+setwd("C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course")
+```
+
+Download bedfile, bimfile, famfile (plink format genotype files) from website (github repository)
+
+```{r,  eval=FALSE, echo=TRUE}
+download.file( url="https://github.com/psoerensen/qgdata/raw/main/simulated_human_data/human.bed", mode = "wb",  destfile="human.bed")
+
+download.file( url="https://github.com/psoerensen/qgdata/raw/main/simulated_human_data/human.bim", destfile="human.bim")
+
+download.file( url="https://github.com/psoerensen/qgdata/raw/main/simulated_human_data/human.fam", destfile="human.fam")
+```
+
+Note that mode="wb" for downloading the human.bed file. Otherwise the bed file will be corrupted and results wrong.  
+
+Download pheno and covar files from website (github repository)
+
+```{r,  eval=FALSE, echo=TRUE}
+download.file( url="https://github.com/psoerensen/qgdata/raw/main/simulated_human_data/human.pheno", 
+               destfile="human.pheno")
+download.file( url="https://github.com/psoerensen/qgdata/raw/main/simulated_human_data/human.covar", 
+               destfile="human.covar")
+```
+
+\newpage
+
+# Practical 2: Preparing the phenotype data using R
+
+One of the first thing to do is to explore the data used in the analysis. The goal is to understand the
+variables, how many records the data set contains, how many missing values, what is the variable structure,
+what are the variable relationships and more. Several commands/functions will be used. To read more about
+
+```{r,  eval=TRUE, echo=TRUE}
+library(data.table)
+```
+
+Prepare phenotype and covariables
+
+```{r,  eval=TRUE, echo=TRUE}
+pheno <- fread(input="C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.pheno",data.table=FALSE)
+```
+
+```{r,  eval=TRUE, echo=TRUE}
+covar <- fread(input="C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.covar",data.table=FALSE)
+```
+
+a specific function (e.g., str) write ?str.
+
+#### Question 1: How many observations and which variables do we have in the data set? 
+
+To get a fast overview of the data set you are working with you can use the str or head functions:
+
+```{r,  eval=TRUE, echo=TRUE}
+str(pheno)
+str(covar)
+
+head(pheno)
+head(covar)
+```
+
+
+#### Question 2: How is the phenotype distributed? Use the histogram and boxplot functions to visualize the distribution the trait:
+
+Define the response variable
+
+```{r,  eval=TRUE, echo=TRUE}
+y <- pheno[,3]
+names(y) <- pheno[,1]
+```
+
+  
+The exploratory data analysis is the process of analyzing and visualizing the data to get a better understanding of the data. It is not a formal statistical test.
+Which factors should we include in the statistical model? 
+
+To best answer these question we can fit a logistic regression model that include these factors in the model. 
+
+This can be done using the glm function:
+  
+Fit logistic regression model
+
+```{r,  eval=TRUE, echo=TRUE}
+fit <- glm( y ~ V3+V4+V5+V6+V7+V8+V9+V10+V11+V12+V13+V14, data=covar, family=binomial(link="logit"))
+summary(fit)
+```
+
+  
+Create design matrix for the explanatory variables
+
+```{r,  eval=TRUE, echo=TRUE}
+X <- model.matrix(~V3+V4+V5+V6+V7+V8+V9+V10+V11+V12+V13+V14, data=covar)
+rownames(X) <- covar$V1
+X <- X[names(y),]
+sum(names(y)%in%rownames(X))
+```
+
+
+Define training and validation samples
+
+```{r,  eval=TRUE, echo=TRUE}
+train <- sample(names(y),4000)
+valid <- names(y)[!names(y)%in%train]
+```
+
+
+\newpage
+
+# Practical 2: Prepare genotype for simulated data
+
+```{r,  eval=TRUE, echo=TRUE}
+library(qgg)
+```
+
+Plink bed/bim/fam files (input)
+```{r,  eval=TRUE, echo=TRUE}
+bedfiles <- "C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.bed"
+bimfiles <- "C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.bim"
+famfiles <- "C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.fam"
+```
+
+Summarize bed/bim/fam files
+```{r,  eval=TRUE, echo=TRUE}
+Glist <- gprep(study="1000G", 
+               bedfiles=bedfiles, 
+               bimfiles=bimfiles, 
+               famfiles=famfiles)
+names(Glist)
+str(Glist)
+```
+
+
+Filter rsids based on MAF, missingness, HWE
+```{r,  eval=TRUE, echo=TRUE}
+rsids <-  gfilter( Glist = Glist, 
+                   excludeMAF=0.05, 
+                   excludeMISS=0.05, 
+                   excludeINFO=NULL,
+                   excludeCGAT=TRUE,
+                   excludeINDEL=TRUE, 
+                   excludeDUPS=TRUE, 
+                   excludeHWE=1e-12, 
+                   excludeMHC=FALSE) 
+```
+
+
+Compute sparse LD using only the filtered rsids
+```{r,  eval=TRUE, echo=TRUE}
+ldfiles <- "C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.ld"
+Glist <- gprep( Glist, 
+                task="sparseld", 
+                msize=1000, 
+                rsids=rsids, 
+                ldfiles=ldfiles, 
+                overwrite=TRUE)
+```
+
+
+
+
+# Practical 3: Prepare summary statistics for simulated data 
+
+
+Fit single marker regression model and compute summary statistics
+```{r,  eval=TRUE, echo=TRUE}
+stat <- glma(y=y[train], X=X[train,], Glist=Glist)
+```
+
+Clumping and thresholding
+
+```{r,  eval=TRUE, echo=TRUE}
+threshold <- c(0.00001, 0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.5,1)
+statAdj <- adjStat(Glist=Glist, stat=stat, r2=0.9, threshold=threshold)
+grs <- gscore(Glist=Glist,stat=statAdj)
+paCT <- acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
+paCT
+```
+
+
+```{r,  eval=TRUE, echo=TRUE}
+plot( y=statAdj[rownames(stat),"b_0.001"], col=1, 
+      x=stat$b, 
+      xlab="Marginal Effect", 
+      ylab="Adjusted Effect",
+      frame.plot=FALSE, ylim=c(-0.05,0.05), xlim=c(-0.05,0.05), 
+      main="Shrinkage using C+T \n (p=0.001, r2=0.9)")
+
+plot(-log10(stat$p), frame.plot=FALSE,ylab="-log10(P)", xlab="Markers", type="l") 
+```      
+
+BayesN BLR model
+
+```{r,  eval=TRUE, echo=TRUE}
+fit <- gbayes( stat=stat, Glist=Glist, method="bayesN", nit=1000)
+grs <- gscore(Glist=Glist, stat=fit$stat)
+paN <- acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
+paN
+```
+
+
+Fit BayesA BLR model
+
+```{r,  eval=TRUE, echo=TRUE}
+fit <- gbayes( stat=stat, Glist=Glist, method="bayesA", nit=1000)
+grs <- gscore(Glist=Glist, stat=fit$stat)
+paA <- acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
+paA
+```
+
+```{r,  eval=TRUE, echo=TRUE}
+plot(y=fit$stat[rownames(stat),"badj"], x=stat$b, 
+     xlab="Marginal Effect", 
+     ylab="Joint Effect",
+     frame.plot=FALSE, main="Bayes A")
+```
+
+Fit BayesC BLR model
+
+```{r,  eval=TRUE, echo=TRUE}
+fit <- gbayes( stat=stat, Glist=Glist, method="bayesC", nit=1000)
+grs <- gscore(Glist=Glist, stat=fit$stat)
+paC <- acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
+paC
+```
+
+
+```{r,  eval=TRUE, echo=TRUE}
+plot(fit[[1]]$dm, 
+     xlab="Marker", 
+     ylab="Posterior inclusion probability",
+     frame.plot=FALSE, main="Bayes C")
+```
+
+
+```{r,  eval=TRUE, echo=TRUE}
+plot(y=fit$stat[rownames(stat),"badj"], x=stat$b, 
+     xlab="Marginal Effect", 
+     ylab="Joint Effect",
+     frame.plot=FALSE, main="Bayes C")
+```
+
+
+Fit BayesR BLR model
+
+```{r,  eval=TRUE, echo=TRUE}
+fit <- gbayes( stat=stat, Glist=Glist, method="bayesR", nit=1000)
+grs <- gscore(Glist=Glist, stat=fit$stat)
+paR <- acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
+paR
+```
+
+
+```{r,  eval=TRUE, echo=TRUE}
+plot(fit[[1]]$dm, 
+     xlab="Marker", 
+     ylab="Marker class",
+     frame.plot=FALSE, ylim=c(0,3), main="Bayes R")
+abline(h=1, lty=2, col=2, lwd=2)
+abline(h=2, lty=2, col=2, lwd=2)
+abline(h=3, lty=2, col=2, lwd=2)
+````
+
+```{r,  eval=TRUE, echo=TRUE}
+plot(y=fit$stat[rownames(stat),"badj"], x=stat$b, 
+     xlab="Marginal Effect", 
+     ylab="Joint Effect",
+     frame.plot=FALSE, main="Bayes R")
+````
+
+```{r,  eval=TRUE, echo=TRUE}
+auc <- c(paCT[-1,"AUC"],paN[,"AUC"],paA[,"AUC"],paC[,"AUC"],paR[,"AUC"])
+plot(auc, ylab="AUC")
+names(auc) <- c("C+T   1e-5", "C+T   1e-4", "C+T 0.001","C+T 0.005",
+                "C+T   0.01", "C+T   0.05", "C+T     0.1", "C+T     0.2", 
+                "C+T     0.5",
+                "C+T     1.0","BayesN","BayesA","BayesC","BayesR") 
+qgg:::plotForest(x=auc,sd=rep(0,length(auc)), reorder=FALSE, xlab="AUC", main="Accuracy") 
+```
+
+```{r,  eval=TRUE, echo=TRUE}
+yobs <- y[valid]
+ypred <- grs[names(y[valid]),]
+
+nbin <- 20
+qsets <- qgg:::splitWithOverlap( names(ypred)[order(ypred)],length(ypred)/nbin,0)
+qy <- sapply(qsets,function(x){mean(yobs[x])})
+qg <- sapply(qsets,function(x){mean(ypred[x])})
+colfunc <- colorRampPalette(c("lightblue", "darkblue"))
+plot(y=qy,x=qg,pch=19,ylab="Proportion of cases",xlab="Mean Genomic Score", col=colfunc(nbin), frame.plot=FALSE)
+plot(y=qy,x=(1:nbin)/nbin,pch=19,ylab="Proportion of cases",xlab="Percentile of GRS", col=colfunc(nbin), frame.plot=FALSE)
+```
+
+
+Fit BLR models and compare shrinkage
+
+```{r,  eval=TRUE, echo=TRUE}
+fitN <- gbayes( stat=stat, Glist=Glist, method="bayesN", nit=1000)
+fitA <- gbayes( stat=stat, Glist=Glist, method="bayesA", nit=1000)
+fitC <- gbayes( stat=stat, Glist=Glist, method="bayesC", nit=1000)
+fitR <- gbayes( stat=stat, Glist=Glist, method="bayesR", nit=1000)
+````
+
+```{r,  eval=TRUE, echo=TRUE}
+plot( y=fitN$stat[rownames(stat),"badj"], col=1, pch=1, 
+     x=stat$b, 
+     xlab="Marginal Effect", 
+     ylab="Adjusted Effect",
+     frame.plot=FALSE, ylim=c(-0.05,0.05), xlim=c(-0.05,0.05), 
+     main="Shrinkage using BLR")
+abline(a=0,b=1)
+points( y=fitA$stat[rownames(stat),"badj"], x=stat$b, col=2, pch=2)
+points( y=fitC$stat[rownames(stat),"badj"], x=stat$b, col=3, pch=3)
+points( y=fitR$stat[rownames(stat),"badj"], x=stat$b, col=4, pch=4)
+legend("top", legend = c("Bayes N", "Bayes A", "Bayes C", "Bayes R"), 
+       col = 1:4, pch = 1:4, bty = "n", 
+       text.col = "black", 
+       horiz = F)
+```
+
+```{r,  eval=TRUE, echo=TRUE}
+plot( y=fitR$stat[rownames(stat),"badj"], col=4, pch=4, 
+      x=stat$b, 
+      xlab="Marginal Effect", 
+      ylab="Adjusted Effect",
+      frame.plot=FALSE, ylim=c(-0.05,0.05), xlim=c(-0.05,0.05), 
+      main="Shrinkage BLR vs C+T")
+abline(a=0,b=1)
+points( y=statAdj[rownames(stat),"b_0.001"], x=stat$b, col=2, pch=2)
+legend("top", legend = c("Bayes R", "C+T (P = 0.001)"), 
+       col = c(4,2), pch = c(4,2), bty = "n", 
+       text.col = "black", 
+       horiz = F)
+```
