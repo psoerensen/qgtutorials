@@ -570,7 +570,7 @@ Bayesian linear regression models can also be used to map genetic variants assoc
 
 Bayesian linear regression models fit all markers simultaneously and their effects as drawn from a prior distribution that attempts to match the true distribution of marker effects as closely as possible. However the true distribution of effect sizes is unknown but a mixture of normal distributions can approximate a wide variety of distributions by varying the mixing proportions. Erbe et al. used this prior and included one component of the mixture with zero variance. A similar model was proposed by Zhou et al. but with a mixture of two normal distributions, one with a small variance and one with a larger variance.
 
-In the following the statistical model, prior distributions of model parameters, algorithms for estimation of model parameters, extensions for handling multiple marker sets and multiple traits for the Bayesian linear regression models is presented. We will present two alternative BLR models, BLR model for marker effects and BLR model for individual effects.  
+In the following the statistical model, prior distributions of model parameters, algorithms for estimation of model parameters, for the Bayesian linear regression models is presented. 
 
 
 ## Statistical model
@@ -780,15 +780,15 @@ paR
 <!--      frame.plot=FALSE, main="Bayes R") -->
 <!-- ```` -->
 
-<!-- ```{r,  eval=TRUE, echo=TRUE} -->
-<!-- auc <- c(paCT[-1,"AUC"],paN[,"AUC"],paA[,"AUC"],paC[,"AUC"],paR[,"AUC"]) -->
-<!-- plot(auc, ylab="AUC") -->
-<!-- names(auc) <- c("C+T   1e-5", "C+T   1e-4", "C+T 0.001","C+T 0.005", -->
-<!--                 "C+T   0.01", "C+T   0.05", "C+T     0.1", "C+T     0.2", -->
-<!--                 "C+T     0.5", -->
-<!--                 "C+T     1.0","BayesN","BayesA","BayesC","BayesR") -->
-<!-- qgg:::plotForest(x=auc,sd=rep(0,length(auc)), reorder=FALSE, xlab="AUC", main="Accuracy") -->
-<!-- ``` -->
+```{r,  eval=FALSE, echo=TRUE}
+auc <- c(paCT[-1,"AUC"],paN[,"AUC"],paA[,"AUC"],paC[,"AUC"],paR[,"AUC"])
+plot(auc, ylab="AUC")
+names(auc) <- c("C+T   1e-5", "C+T   1e-4", "C+T 0.001","C+T 0.005",
+                "C+T   0.01", "C+T   0.05", "C+T     0.1", "C+T     0.2",
+                "C+T     0.5",
+                "C+T     1.0","BayesN","BayesA","BayesC","BayesR")
+qgg:::plotForest(x=auc,sd=rep(0,length(auc)), reorder=FALSE, xlab="AUC", main="Accuracy")
+```
 
 
 \newpage
@@ -802,6 +802,8 @@ fitC <- gbayes( stat=stat, Glist=Glist, method="bayesC", nit=1000)
 fitR <- gbayes( stat=stat, Glist=Glist, method="bayesR", nit=1000)
 ````
 
+
+## Compare shrinkage
 ```{r,  eval=FALSE, echo=TRUE}
 plot( y=fitN$stat[rownames(stat),"badj"], col=1, pch=1,
      x=stat$b,
