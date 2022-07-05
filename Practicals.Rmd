@@ -21,7 +21,7 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE, tidy.opts = list(width.c
 
 # Introduction
 
-The aim of this practical is to provide a simple introduction of polygenic risk scoring (PRS) analyses of complex traits and diseases. The practical will be a mix of theoretical and practical exercises in R that are used for illustrating/applying the theory presented in the corresponding lecture on polygenic risk scoring:
+The aim of this practical is to provide a simple introduction to polygenic risk scoring (PRS) of complex traits and diseases. The practical will be a mix of theoretical and practical exercises in R that are used for illustrating/applying the theory presented in the corresponding lecture on polygenic risk scoring:
 
 * Data used for computing polygenic risk scores
 * Methods  used for computing polygenic risk scores
@@ -32,39 +32,39 @@ This practical provides a step-by-step guide to performing basic PRS analyses in
 
 * Session 1: Use R for downloading data
 * Session 2: Prepare and explore phenotype data
-* Session 3: Prepare and quality control of genotype data
-* Session 4: Compute summary statistics 
+* Session 3: Prepare and perform quality control of genetic data
+* Session 4: Compute GWAS summary statistics 
 * Session 5: Compute sparse LD matrices 
-* Session 6: Compute polygenic risk scores using a clumping and thresholding (C+T) method
-* Session 7: Compute polygenic risk scores using Bayesian Linear Regression (BLR) methods
+* Session 6: Compute PRS using clumping and thresholding (C+T) 
+* Session 7: Compute PRS using different Bayesian Linear Regression (BLR) models
 
 #### Polygenic risk scores:
-Polygenic risk scoring combines information from large numbers of markers across the genome (hundreds to millions) to give a single numerical score for individual’s risk for developing a specific disease on the basis of the DNA variants they have inherited.
+Polygenic risk scoring combines information from large numbers of markers across the genome (hundreds to millions) to give a single numerical score for an individual’s relative risk for developing a specific disease on the basis of the DNA variants they have inherited. \textcolor{red}{Detalje, men overvej om du istedet vil kalde det for Genomic (risk) scores da ordlyden passer bedre på kvantitative traits.}
 
 For a particular disease or trait a polygenic risk score (PRS) is calculated as:
-			$$PRS=\sum_{i=1}^mX_i  b_i$$
+			$$PRS=\sum_{i=1}^mX_i  \hat{b}_i$$
 
-where $X_i$ is the genotype vector, and $b_i$ the weight of the i’th single genetic marker.
+where $X_i$ is the genotype vector, and $\hat{b}_i$ the weight of the i’th single genetic marker.
 
-Genomic prediction used for many years in animal and plant breeding (e.g. Meuwissen  et al. 2001). Genomic prediction (i.e. polygenic risk scoring) is now being in humans because of:
+Genomic prediction has been used for many years in animal and plant breeding (e.g., Meuwissen  et al. 2001), and genomic prediction (i.e., PRS) has gained popularity during the last decade because of:
 
 * Larger GWAS sample size = more precision for effect estimates
 * Development of methods that combine genome-wide sets of variants
-* Large Biobanks for validation and testing of genetic risk scores 
-* Ability to identify clinically meaningfull increases in disease risk predictions 
+* Large biobanks for validation and testing of genetic risk scores 
+* Ability to identify clinically meaningful increases in disease risk predictions \textcolor{red}{Forstår ikke denne sætning :) Clinical hvad?}
 
 #### Terminology: 
 Polygenic risk scores, polygenic scores, genomic risk score, genetic scores, genetic predispostion, genetic value,  genomic breeding value is (more or less) the same thing.
 
 #### Heritability: 
-Heritability quantify the degree of variation in a phenotypic trait in a population that is due to genetic variation between individuals in that population. It measures how much of the variation of a trait can be attributed to variation of genetic factors, as opposed to variation of environmental factors. The narrow sense heritability is the ratio of additive genetic variance ($\sigma^2_{a}$) to the overall phenotypic variance ($\sigma^2_{y}=\sigma^2_{a}+\sigma^2_{e}$):
+The heritability ($h^2$) quantify the degree of variation in a phenotypic trait in a population that is due to genetic variation between individuals in that population. It measures how much of the variation of a trait can be attributed to variation of genetic factors, as opposed to variation of environmental factors. The narrow sense heritability is the ratio of additive genetic variance ($\sigma^2_{a}$) to the overall phenotypic variance ($\sigma^2_{y}=\sigma^2_{a}+\sigma^2_{e}$):
 \begin{align}
 h^2 &= \sigma^2_{a}/(\sigma^2_a+\sigma^2_e)
 \end{align}
-A heritability of 0 implies that no genetic effects influence the observed variation in the trait, while a heritability of 1 implies that all of the variation in the trait is explained by the genetic effects. In general the amount of information provided by the phenotype about the genetic risk is determined by the heritability. Note that heritability is population-specific and a heritability of 0 does not necessarily imply that there is no genetic determinism for the trait. 
+A heritability of 0 implies that no genetic effects influence the observed variation in the trait, while a heritability of 1 implies that all of the variation in the trait is explained by the genetic effects. In general, the amount of information provided by the phenotype about the genetic risk is determined by the heritability. Note that heritability is population-specific and a heritability of 0 does not necessarily imply that there is no genetic determinism for the trait. 
 
 #### Complex traits and diseases: 
-For many complex traits and diseases there will be thousands of genetic variants that each contribute with a small effect on disease risk. Rare variant with large effects will only explain small proportion of $h2$ (low predictive potential). Common variants with small effects can explain larger proportion of $h2$ (high predictive potential). Many complex traits and diseases in humans are heritable. The degree of heritability determines the value of using genetics for risk prediction. In general large data sets are required to obtain accurate estimates of small to moderate effects and thereby improve prediction accuracy.
+For many complex traits and diseases there will be thousands of genetic variants that each contribute with a small effect on the disease risk or quantitative trait. Rare variant with large effects will only explain small proportion of $h^2$ (low predictive potential). Common variants with small effects can explain larger proportion of $h^2$ (high predictive potential). The majority of complex traits and common diseases in humans are heritable. The heritability determines the value of using genetics for risk prediction. In general, large data sets are required to obtain accurate marker estimates of small to moderate effects, which also improves the prediction accuracy.
 
 #### Software used: 
 To follow the practical, you will need the following installed (see installation guides below):
@@ -72,36 +72,38 @@ To follow the practical, you will need the following installed (see installation
 * R (version $\geq$ 4.2)
 * qgg (version $\geq$ 1.1.1)
 
-We assume you have basic knowledge on how to use R. We suggest to use R through a user-friendly interface called Rstudio (although this is not a requirement). 
+We assume you have basic knowledge on how to use R. We suggest to use R through the user-friendly interface called Rstudio (although this is not a requirement). 
 
 \newpage
 
 
 # Install R and Rstudio
-__R__ is a free software environment for statistical computing and graphics (https://www.r-project.org/). Because R is free and it is available for the most commonly used operating systems such as Windows, MacOSX and Linux, it has become very popular in statistics and in data science. Furthermore, R can be extended with user-contributed code and documentation (called R-packages) in a very easy and standardised way. The number of available R-packages is growing rapidly and has reached more than 18000 (https://cran.r-project.org/web/packages/).
+__R__ is a free software environment for statistical computing and graphics (\href{https://www.r-project.org/}{https://www.r-project.org/}). Because R is free and it is available for the most commonly used operating systems such as Windows, MacOSX and Linux, it has become very popular in statistics and in data science. Furthermore, R can be extended with user-contributed code and documentation (called R-packages) in a very easy and standardised way. The number of available R-packages is growing rapidly and has reached more than 18000 (\href{https://cran.r-project.org/web/packages/}{https://cran.r-project.org/web/packages/}).
 
-__RStudio__ (https://www.rstudio.com/) is a private company that among a large number of different products distributes the RStudio Integrated Development Environment (IDE) for R. A great number of different resources about R and RStudio IDE is available. 
+__RStudio__ (\href{https://www.rstudio.com/}{https://www.rstudio.com/}) is a private company that offers a number of different products, with one being Rstudio which is an Integrated Development Environment (IDE) for R. A great number of different resources about R and RStudio IDE is available. 
 
 \hfill
 
-__Install R__ from here: https://mirrors.dotsrc.org/cran/
+__Install R__ from here: \href{https://mirrors.dotsrc.org/cran/}{https://mirrors.dotsrc.org/cran/}
 
-__Install Rstudio__ (free version) from here: https://www.rstudio.com/products/rstudio/download/
+__Install Rstudio__ (free version) from here: \href{https://www.rstudio.com/products/rstudio/download/}{https://www.rstudio.com/products/rstudio/download/}
+
+\hfill
 
 __Further information and introduction to R and Rstudio__ can be found here:
 
-https://cran.r-project.org/doc/manuals/r-release/R-intro.html   
+\href{https://cran.r-project.org/doc/manuals/r-release/R-intro.html}{https://cran.r-project.org/doc/manuals/r-release/R-intro.html}
 
-https://www.rstudio.com/resources/cheatsheets
+\href{https://www.rstudio.com/resources/cheatsheets}{https://www.rstudio.com/resources/cheatsheets}
 
-https://www.rstudio.com/resources/webinars
+\href{https://www.rstudio.com/resources/webinars}{https://www.rstudio.com/resources/webinars}
 
 
 \newpage
 
-# Brief introduction to workflows used for PRS analyses in the `qgg` package
+# Introduction to PRS workflow using the `qgg` package
 
-The practical is based on the R package `qgg`. This package provides an infrastructure for efficient processing of large-scale genetic and phenotypic data including core functions for: 
+The practical is based on the R package `qgg` (Rohde et al. (2021)). This package provides an infrastructure for efficient processing of large-scale genetic and phenotypic data including core functions for: 
 
 * fitting linear mixed models 
 * constructing genetic relationship matrices 
@@ -109,11 +111,11 @@ The practical is based on the R package `qgg`. This package provides an infrastr
 * performing genomic prediction and genetic risk profiling 
 * single or multi-marker association analyses
 
-qgg handles large-scale data by taking advantage of:
+`qgg` handles large-scale data by taking advantage of:
 
 * multi-core processing using openMP
-* multithreaded matrix operations implemented in BLAS libraries (e.g. OpenBLAS, ATLAS or MKL)
-* fast and memory-efficient batch processing of genotype data stored in binary files (e.g. PLINK bedfiles)
+* multithreaded matrix operations implemented in BLAS libraries (e.g., OpenBLAS, ATLAS or MKL)
+* fast and memory-efficient batch processing of genotype data stored in binary files (e.g., PLINK bedfiles)
 
 You can install qgg from CRAN with:
 
@@ -121,75 +123,73 @@ You can install qgg from CRAN with:
 install.packages("qgg")
 ```
 
-You can install the latest version of qgg from github with:
+The most recent version of `qgg` can be obtained from github:
 
 ```{r,  eval=FALSE, echo=TRUE}
 library(devtools)
 devtools::install_github("psoerensen/qgg")
 ```
 
-### Input data/objects used in polygenic scoring in the `qgg` package
+### Input data/objects used in polygenic risk scoring in the `qgg` package
+All functions in `qgg` used for polygenic risk scoring relies on a simple data infrastructure that takes five main input: 
 
-All functions in qgg used for polygenic scoring relies on a simple data infrastructure that takes five main input: 
+`y`:\qquad \quad vector, matrix or list of phenotypes\newline
+`X`:\qquad \quad design matrix for non-genetic factors \newline
+`W`:\qquad \quad matrix of centered and scaled genotypes (in memory) \newline
+`Glist`:\quad list structure providing information on genotypes, sparse LD, and LD scores (on disk) \newline
+`stat`:\quad data frame with marker summary statistics \newline
 
-\begin{flushleft}
-  y:      vector, matrix or list of phenotypes\\
-  X:      design matrix for non-genetic factors \\
-  W:      matrix of centered and scaled genotypes (in memory) \\
-  Glist:  list structure providing information on genotypes, sparse LD, and LD scores (on disk) \\
-  stat:   data frame with marker summary statistics \\
-\end{flushleft}
 
 ### Prepare genotype information in Glist format (DO NOT RUN!)
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 Glist <- gprep(bed/bim/famfiles, task="prepare")
 ```
 
 ### Filter markers (DO NOT RUN!)
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
-rsids <- gfilter(Glist,excludeMAF=0.01, ....)
+rsids <- gfilter(Glist, excludeMAF=0.01, ....)
 ```
 
 ### Compute sparse LD matrices and ldscores (DO NOT RUN!)
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 Glist <- gprep(Glist, rsids, ids, ldfiles, task="sparseld")
 ```
 
 ### Compute summary statistics (e.g. fit single marker regression model) (DO NOT RUN!)
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 stat <- glma(y=y[train], X=X[train,], Glist=Glist)  
 ```
 
 ### Quality control of summary statistics (DO NOT RUN!)
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 stat <- qcStat(stat=stat, Glist=Glist)              
 ```
 
-### Clumping and thresholding (DO NOT RUN!)  
-\vspace{-5truemm}
+### Clumping and thresholding (DO NOT RUN!)
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 stat <- adjStat(Glist=Glist, stat=stat, r2=0.9, threshold=c(0.5, 0.01, 0.001))
 ```
 
-### BLR model analysis based on summary statistics (DO NOT RUN!) 
-\vspace{-5truemm}
+### BLR model analysis based on summary statistics (DO NOT RUN!)
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
-fit <- gbayes( stat=stat, Glist=Glist, method="bayesR”)  
+fit <- gbayes(stat=stat, Glist=Glist, method="bayesR")
 ```
 
 ### Polygenic scoring (DO NOT RUN!)
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 grs <- gscore(Glist=Glist, stat=fit$stat)                   
 ```
 
-### Assess accuracy of polygenic scores (e.g. AUC or R2) (DO NOT RUN!)
-\vspace{-5truemm}
+### Assess accuracy of polygenic scores (e.g. AUC or $R^2$) (DO NOT RUN!)
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
 ```
@@ -197,34 +197,32 @@ acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
 
 
 \newpage
-
 # Session 1: Downloading the data using R
 
-In this practical we will perform polygenic risk scoring based on simulated data. The data consist of disease phenotype, covariables, and genetic marker data. The data used in this practical are intended for demonstration purposes only. 
+In this practical we will perform polygenic risk scoring based on simulated data. The data consist of disease phenotype, covariable, and genetic marker data. The data used in this practical are intended for demonstration purposes only. 
 
 
 ### Load required packages: 
-\vspace{-5truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 library(data.table)
 library(tools)
 ```
 
 ### Create directory for downloading files:
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 dir.create("C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course")
 ```
 
 ### Set working directory for the downloaded files:
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 setwd("C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course")
 ```
 
 ### Download PLINK genotype files (bedfile, bimfile, famfile) from github repository: 
-\vspace{-5truemm}
-Genotype data are commonly stored in binary format in PLINK .bed files. These files must be accompanied by .bim and .fam files. Read more about these file formats here:
+\vspace{-1truemm}
+Genetic data are commonly stored in a binary format (as used by the software PLINK), named `.bed`-files. These files must be accompanied by `.bim` (contains information about the genetic variants) and `.fam` (contains information about the individuals) files. Read more about these file formats here:
 
 1. https://www.cog-genomics.org/plink/1.9/formats#bed
 2. https://www.cog-genomics.org/plink/1.9/formats#bim
@@ -238,22 +236,26 @@ download.file( url=url, destfile="human.bim")
 url <- "https://github.com/psoerensen/qgdata/raw/main/simulated_human_data/human.fam"
 download.file( url=url, destfile="human.fam")
 ```
-Note that mode="wb" for downloading the human.bed file. This is needed or otherwise the bedfile will be corrupted. If the data file is corrupted it can cause errors in the results. 
+Note that `mode="wb"` for downloading the human.bed file. This is needed or otherwise the bed-file will be corrupted. If the data file is corrupted it can cause errors in the analyses. 
 
 ### Check md5sum: 
-\vspace{-5truemm}
+\vspace{-1truemm}
 A md5sum hash is generally included in files so that file integrity can be checked. The following command performs this md5sum check in R:
 ```{r,  eval=FALSE, echo=TRUE}
 md5sum("C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.bed")
 ```
-This should be compared to the md5sum value before download. However the md5sum is not available on the github repository (anyone else knows how to obtain it?). 
+This should be compared to the md5sum value before download: 
+```{r,  eval=FALSE, echo=TRUE}
+# for MacOS / Linux users
+system(paste("curl -sL https://github.com/psoerensen/qgdata/raw/main/simulated_human_data
+             /human.bed | md5"))
+```
 
 Read more about md5sum here:
-
-https://en.wikipedia.org/wiki/Md5sum
+\href{https://en.wikipedia.org/wiki/Md5sum}{https://en.wikipedia.org/wiki/Md5sum}
 
 ### Download pheno and covar files from github repository;
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 url <- "https://github.com/psoerensen/qgdata/raw/main/simulated_human_data/human.pheno"
 download.file( url=url, destfile="human.pheno")
@@ -266,25 +268,28 @@ download.file( url=url, destfile="human.covar")
 # Session 2: Preparing the phenotype and covariable data using R
 
 One of the first thing to do is to prepare the phenotypic data used in the analysis. The goal is to understand the variables, how many records the data set contains, how many missing values, what is the variable structure, what are the variable relationships and more. 
-Several commands/functions can be used (e.g. `str`, `head`, `dim`, `table`,`is.na`). 
+
+Several functions can be used (e.g., `str()`, `head()`, `dim()`, `table()`,`is.na()`). 
 
 ```{r,  eval=FALSE, echo=TRUE}
 library(data.table)
 ```
 
 ### Read phenotype and covariables data files
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
-pheno <- fread(input="C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.pheno",data.table=FALSE)
+pheno <- fread(input="C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.pheno", 
+               data.table=FALSE)
 ```
 
 ```{r,  eval=FALSE, echo=TRUE}
-covar <- fread(input="C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.covar",data.table=FALSE)
+covar <- fread(input="C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.covar", 
+               data.table=FALSE)
 ```
 
 
 ### How many observations and which variables do we have in the data set? 
-To get a fast overview of the data set you are working with you can use the str or head functions:
+To get an overview of the data set you are working with you can use the `str()` or `head()` functions:
 ```{r,  eval=FALSE, echo=TRUE}
 str(pheno)
 str(covar)
@@ -295,27 +300,28 @@ head(pheno)
 head(covar)
 ```
 
-
 ### How is the phenotype distributed? 
 Define the response variable
 ```{r,  eval=FALSE, echo=TRUE}
 y <- pheno[,3]
 names(y) <- pheno[,1]
 ```
-Use the histogram and boxplot functions to visualize the distribution the trait:
+
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. Use the histogram and boxplot functions to visualize the distribution the trait/covariables.
 
 
 ### Which factors or covariated influence the phenotype? 
 The exploratory data analysis is the process of analyzing and visualizing the data to get a better understanding of the data. It is not a formal statistical test. Which factors should we include in the statistical model? To best answer these question we can fit a logistic regression model that include these factors in the model. 
 
-This can be done using the `glm` function:
+This can be done using the `glm()` function:
   
 ```{r,  eval=FALSE, echo=TRUE}
-fit <- glm( y ~ V3+V4+V5+V6+V7+V8+V9+V10+V11+V12+V13+V14, data=covar, family=binomial(link="logit"))
+fit <- glm( y ~ V3+V4+V5+V6+V7+V8+V9+V10+V11+V12+V13+V14, 
+            data=covar, family=binomial(link="logit"))
 summary(fit)
 ```
 
-The exploration (including quality control) of phenotypes and covariables is a key step in quantitative genetic analyses. It is however beyond the scope of this practical. 
+The exploration (including quality control) of phenotypes and covariables is a key step in quantitative genetic analyses. It is, however, beyond the scope of this practical. 
 
 
 
@@ -323,15 +329,14 @@ The exploration (including quality control) of phenotypes and covariables is a k
 
 # Session 3: Prepare genotype for simulated data
 
-The preparation (including quality control) of genotype data is a key step in quantitative genetic analyses. The function `gprep` reads genotype information from binary PLINK files, and creates the Glist object that contains general information about the genotypes such as allele frequencies, homozygozity, missingnes,  number of individuals etc..
-
+The preparation (including quality control) of genotype data is a key step in quantitative genetic analyses. The function `gprep()` reads genotype information from binary PLINK files, and creates the `Glist` object that contains general information about the genotypes such as allele frequencies, homozygozity, missingnes, number of individuals etc.
 
 ```{r,  eval=FALSE, echo=TRUE}
 library(qgg)
 ```
 
 ### Summarize genotype information using the gprep 
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 bedfiles <- "C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.bed"
 bimfiles <- "C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.bim"
@@ -343,24 +348,23 @@ Glist <- gprep(study="Example",
                bedfiles=bedfiles,
                bimfiles=bimfiles,
                famfiles=famfiles)
-names(Glist)
+saveRDS(Glist, file="C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\Glist.RDS", compress=FALSE)
 ```
 
-The output from gprep (Glist) has a list structure that contains information about the genotypes in the binary file. Glist is required for downstream analyses of large-scale genetic data. Typically, the Glist is prepared once, and saved as an *.Rdata-file. To explore the content of the Glist object:
+The output from `gprep()` (`Glist`) has a list structure that contains information about the genotypes in the binary file. `Glist` is required for downstream analyses of large-scale genetic data. Typically, the `Glist` is prepared once, and saved as an *.RDS-file. To explore the content of the `Glist` object:
 
 ```{r,  eval=FALSE, echo=TRUE}
+names(Glist)
 str(Glist)
 ```
 
-\vspace{-5truemm}
-#### Which quality controls are needed for genotype data?
-\vspace{-5truemm}
-#### Why quality controls for genotype data needed?
+
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. Why should we do quality control of the genetic data? \newline 2. Which quality metrics are needed for genetic data?\newline \textit{hint} - see Marees et al (2018) (\href{doi:10.1002/mpr.1608}{doi:10.1002/mpr.1608}).
 
 
 ### Quality control of genotype data
-The genotype data must be quality controlled, e.g. removing markers with low genotyping rate, low minor allele frequency, out of Hardy-Weinberg Equilibrium. The function `gfilter` can be used for filtering of markers based:
-\vspace{-5truemm}
+The genotype data must be quality controlled, e.g. removing markers with low genotyping rate, low minor allele frequency, out of Hardy-Weinberg Equilibrium. The function `gfilter()` can be used for filtering of markers:
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 rsids <-  gfilter( Glist = Glist,
                    excludeMAF=0.05,
@@ -372,8 +376,7 @@ rsids <-  gfilter( Glist = Glist,
                    excludeMHC=FALSE)
 ```
 
-
-
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. How many variants are removed during the quality control?\newline 2. Make a distribution plot of the frequency of the $A_1$-allele before and after quality control.
 
 
 \newpage
@@ -382,15 +385,17 @@ rsids <-  gfilter( Glist = Glist,
 
 One of the first step in PRS analyses is to generate or obtain GWAS summary statistics. Ideally these will correspond to the most powerful GWAS results available on the phenotype under study. In this example, we will use GWAS on the simulated disease phenotype. We will use only a subset of the data (training data) in the GWAS and the remaining subset of the data (validation data) to assess the accuracy of the polygenic risk scores.   
 
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. What is a GWAS\newline 2. What are GWAS summary statistics?
+
 ### Define the response variable
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 y <- pheno[,3]
 names(y) <- pheno[,1]
 ```
 
 ### Create design matrix for the explanatory variables
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 X <- model.matrix(~V3+V4+V5+V6+V7+V8+V9+V10+V11+V12+V13+V14, data=covar)
 rownames(X) <- covar$V1
@@ -399,36 +404,28 @@ sum(names(y)%in%rownames(X))
 ```
 
 ### Define training and validation samples
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 train <- sample(names(y),4000)
 valid <- names(y)[!names(y)%in%train]
 ```
 
 
-## Computation of GWAS summary statistics 
-
-### What are GWAS summary statistics?
-The function `glma` can be used for compution of summary statistics.
-
-
-### Computation of summary statistics:
-\vspace{-5truemm}
+### Computation of GWAS summary statistics 
+The function `glma` can be used for computing GWAS summary statistics.
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 stat <- glma(y=y[train], X=X[train,], Glist=Glist)
 ```
 
 ### Explore the output (stat) form the `glma` function:
-\vspace{-5truemm}
+\vspace{-1truemm}
 ```{r,  eval=FALSE, echo=TRUE}
 dim(stat)
 head(stat)
 ```
 
-```{r,  eval=FALSE, echo=TRUE}
-plot(-log10(stat$p), frame.plot=FALSE,ylab="-log10(P)", xlab="Markers", type="l")
-```
-
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. Present the results from the GWAS as a Manhattan plot.\newline 2. Plot the marker effect sizes as a function of the allele frequency.
 
 
 \newpage
@@ -454,8 +451,10 @@ Glist <- gprep( Glist,
                 rsids=rsids,
                 ldfiles=ldfiles,
                 overwrite=TRUE)
+saveRDS(Glist, file="C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\Glist_sparseLD_1k.RDS", compress=FALSE)
 ```
 
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. In the context of a GWAS, why is information about LD important?\newline 2. Plot the average LD decay for a subset of genetic variants \newline(\textit{Hint}: $LD <- getLD(Glist=Glist, chr=1, rsids=Glist\$rsidsLD[[1]][5000:5010])$)
 
 <!-- ### Quality control of summary statistics: -->
 <!-- \vspace{-5truemm} -->
@@ -466,14 +465,14 @@ Glist <- gprep( Glist,
 
 \newpage
 
-# Session 6: Polygenic risk scoring using a clumping and thresholding (C+T) method
+# Session 6: Compute PRS using clumping and thresholding (C+T) 
 
-Polygenic risk scoring using clumping and thresholding is a relative simple and robust method. Linkage disequilibrium makes identifying the contribution from causal independent genetic variants extremely challenging. One way of approximately capturing the right level of causal signal is to perform clumping, which removes markers in ways that only weakly correlated SNPs are retained but preferentially retaining the SNPs most associated with the phenotype under study. The clumping procedure uses a statistic (usually p-value) to sort the markers by importance (e.g. keeping the most significant ones). It takes the first one (e.g. most significant marker) and removes markers (i.e. set their effect to zero) if they are too correlated (e.g. $r^2>0.9$) with this one in a window around it. As opposed to pruning, this procedure makes sure that this marker is never removed, keeping at least one representative marker by region of the genome. Then it goes on with the next most significant marker that has not been removed yet. 
+Polygenic risk scoring using clumping and thresholding is a relative simple and robust method. Linkage disequilibrium makes identifying the contribution from causal independent genetic variants extremely challenging. One way of approximately capturing the right level of causal signal is to perform clumping, which removes markers in ways that only weakly correlated SNPs are retained but preferentially retaining the SNPs most associated with the phenotype under study. The clumping procedure uses a statistic (usually $P$-value) to sort the markers by importance (e.g. keeping the most significant ones). It takes the first one (e.g. most significant marker) and removes markers (i.e. set their effect to zero) if they are too correlated (e.g. $r^2>0.9$) with this one in a window around it. As opposed to pruning, this procedure makes sure that this marker is never removed, keeping at least one representative marker by region of the genome. Then it goes on with the next most significant marker that has not been removed yet. 
 
 
 
 ### Clumping and thresholding
-Clumping can be performed using the adjStat in `qgg`. The input to the function is the summary statistic (stat), information about sparse LD matrices which is in the Glist, a threshold of linkage disequilibrium (e.g. $r^2=0.9$) and thresholds for p-values (threshold = c(0.001, 0.05)):
+Clumping can be performed using the `adjStat()`-function in `qgg`. The input to the function is the summary statistic (`stat`), information about sparse LD matrices which is in the `Glist`, a threshold of linkage disequilibrium (e.g. $r^2=0.9$) and thresholds for $P$-values (`threshold = c(0.001, 0.05, ...)`):
 ```{r,  eval=FALSE, echo=TRUE}
 threshold <- c(0.00001, 0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.5,1)
 statAdj <- adjStat(Glist=Glist, stat=stat, r2=0.9, threshold=threshold)
@@ -484,68 +483,59 @@ Explore the output (statAdj) using the `head`, `tail` and `summary` functions:
 head(statAdj)
 ```
 
-To better understand what the clumping procedure is doing we can plot the udadjusted marker effect (from the stat data frame) against the adjusted marker effects (from the the statAdj data frame)  
-```{r,  eval=FALSE, echo=TRUE}
-plot( y=statAdj[rownames(stat),"b_0.001"], col=1,
-      x=stat$b,
-      xlab="Marginal Effect",
-      ylab="Adjusted Effect",
-      frame.plot=FALSE, ylim=c(-0.05,0.05), xlim=c(-0.05,0.05),
-      main="Shrinkage using C+T \n (p=0.001, r2=0.9)")
-```
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1.  Plot the un-adjusted marker effect (from the `stat` dataframe) against the adjusted marker effects (from the the `statAdj` dataframe).
+<!--```{r,  eval=FALSE, echo=TRUE}-->
+<!--plot( y=statAdj[rownames(stat),"b_0.001"], col=1,-->
+<!--      x=stat$b,-->
+<!--      xlab="Marginal Effect",-->
+<!--      ylab="Adjusted Effect",-->
+<!--      frame.plot=FALSE, ylim=c(-0.05,0.05), xlim=c(-0.05,0.05),-->
+<!--      main="Shrinkage using C+T \n (p=0.001, r2=0.9)")-->
+<!--```-->
 
-### Computing polygenic scores
-For each of the p-value thresholds chosen in the C+T procedure a polygenic risk score is computed. 
-The polygenic risk score (PRS) is calculated as:
-			$$PRS=\sum_{i=1}^mX_i  b_i$$
-where $X_i$ is the genotype vector, and $b_i$ the weight of the i’th single genetic marker.
-The PRS are computed using the `gscore` function. The input to the function is the adjusted summary statistic (adjStat), information about genotypes which are in the Glist:
+### Computing polygenic risk scores
+For each of the `P`-value thresholds chosen in the C+T procedure a PRS is computed as:
+			$$PRS=\sum_{i=1}^mX_i  \hat{b}_i$$
+where $X_i$ is the genotype vector, and $\hat{b}_i$ the weight of the i’th single genetic marker.
+The PRS are computed using the `gscore()` function. The input to the function is the adjusted summary statistic (`adjStat`), and information about the genotypes which are in the `Glist`:
 ```{r,  eval=FALSE, echo=TRUE}
-grs <- gscore(Glist=Glist,stat=statAdj)
+prs <- gscore(Glist=Glist,stat=statAdj)
 ```
 
 
 ### Explore polygenic scores
 It is always important to explore the PRS computed.  
 ```{r,  eval=FALSE, echo=TRUE}
-head(grs)
-cor(grs)
+head(prs)
+cor(prs)
 layout(matrix(1:4,ncol=2, byrow=TRUE))
-hist(grs[,"b"])
-hist(grs[,"b_0.001"])
-hist(grs[valid,"b"])
-hist(grs[valid,"b_0.001"])
+hist(prs[,"b"])
+hist(prs[,"b_0.001"])
+hist(prs[valid,"b"])
+hist(prs[valid,"b_0.001"])
 ```
 
-
-#### How are the PRSs distributed?
-\vspace{-5truemm}
-#### Are the PRSs correlated?
-\vspace{-5truemm}
-#### Based on the plots which PRS do you think is the best performing?
-\vspace{-5truemm}
-
-
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. How are the PRSs distributed?\newline 2. Are the PRSs correlated?\newline 3. Based on the plots, which PRS do you think has the best discriminating ability?
 
 ### Evalute polygenic scores 
-The p-value threshold that provides the "best-fit" PRS under the C+T method is usually unknown. To approximate the "best-fit" PRS, we can perform a regression between PRS calculated at a range of p-value thresholds and then select the PRS that explains the highest phenotypic variance or has the highest AUC. This can be achieved using `acc` function as follows:
+The $P$-value threshold that provides the "best-fit" PRS under the C+T method is usually unknown. To approximate the "best-fit" PRS, we can perform a regression between PRS calculated at a range of $P$-value thresholds and then select the PRS that explains the highest phenotypic variance or has the highest AUC. This can be achieved using `acc()`-function as follows:
 
 ```{r,  eval=FALSE, echo=TRUE}
 paCT <- acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
-paCT
 ```
 
-#### Which p-value threshold gives the highest accuracy?
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. Make a plot that compares the prediction accuracies using the different $P$-value thresholds.
+
 
 
 ### Plot polygenic scores 
-For visualization, the GRS were divided into percentiles, and the disease prevalence within each bin was computed; the OR for each percentile was computed adjusting for sex, age, UKB assessment center, and the first 10 genetic principal components, and the OR was expressed relative to the 50-th percentile.
+For visualization, the PRS can be divided into groups (e.g., deciles), and the disease prevalence within each group was computed.<!-- the OR for each percentile was computed adjusting for sex, age, UKB assessment center, and the first 10 genetic principal components, and the OR was expressed relative to the 50-th percentile.-->
 
 ```{r,  eval=FALSE, echo=TRUE}
 yobs <- y[valid]
 ypred <- grs[names(y[valid]),which.max(paCT[,"AUC"])]
 
-nbin <- 20
+nbin <- 10
 qsets <- qgg:::splitWithOverlap( names(ypred)[order(ypred)],length(ypred)/nbin,0)
 qy <- sapply(qsets,function(x){mean(yobs[x])})
 qg <- sapply(qsets,function(x){mean(ypred[x])})
@@ -554,13 +544,14 @@ colfunc <- colorRampPalette(c("lightblue", "darkblue"))
 
 plot(y=qy,x=qg,pch=19,ylab="Proportion of cases",xlab="Mean PRS", col=colfunc(nbin), frame.plot=FALSE)
 
-plot(y=qy,x=(1:nbin)/nbin,pch=19,ylab="Proportion of cases",xlab="Percentile of GRS", col=colfunc(nbin), frame.plot=FALSE)
+plot(y=qy,x=(1:nbin)/nbin,pch=19,ylab="Proportion of cases",xlab="Percentile of PRS", col=colfunc(nbin), frame.plot=FALSE)
 ```
 
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. Make a plot (e.g., boxplot or violin plot) that compares the PRS for cases and controls.\newline 2. Is there statistical difference in PRS between cases and controls?
 
 \newpage
 
-# Session 7: Polygenic risk scoring using Bayesian Linear Regression (BLR) methods
+# Session 7: Compute PRS using different Bayesian Linear Regression (BLR) models
 
 Bayesian linear regression models have been proposed as a unified framework for gene mapping, prediction of genetic predispostion (polygenic risk scoring), estimation of genetic parameters and effect size distribution ([Moser et al. 2015](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4388571/)). 
 
@@ -580,7 +571,7 @@ In the multiple regression model the phenotype is related to the set of genetic 
 y = Xb + e
 \end{align}
 
-where $y$ is the phenotype, $X$ a matrix of SNP genotypes, where values are standardised to give the ijth element as: $x_{ij} = \left( {x_{ij} - 2p_j} \right){\mathrm{/}}\sqrt {2p_j\left( {1 - p_j} \right)}$, with $x_{ij}$ the number of copies of the effect allele (e.g. 0, 1 or 2) for the ith individual at the jth SNP and $p_j$ the allele frequency of the effect allele. $\bf{b}$ are the genetic effects for each SNP, and $e$ the residual error. The dimensions of $y$, $X$, $b$ and $e$ are dependent upon the number of traits, $k$, the number of SNP markers, $m$, and the number of individuals, $n$. The residuals, $e$, are a priori assumed to be independently and identically distributed multivariate normal with null mean and covariance matrix $I\sigma_{e}^2$. 
+where $y$ is the phenotype, $X$ a matrix of SNP genotypes, where values are standardised to give the ijth element as: $x_{ij} = \left( {x_{ij} - 2p_j} \right){\mathrm{/}}\sqrt {2p_j\left( {1 - p_j} \right)}$, with $x_{ij}$ the number of copies of the effect allele (e.g. 0, 1 or 2) for the ith individual at the jth SNP and $p_j$ the allele frequency of the effect allele. $b$ are the genetic effects for each SNP, and $e$ the residual error. The dimensions of $y$, $X$, $b$ and $e$ are dependent upon the number of traits, $k$, the number of SNP markers, $m$, and the number of individuals, $n$. The residuals, $e$, are a priori assumed to be independently and identically distributed multivariate normal with null mean and covariance matrix $I\sigma_{e}^2$. 
 
 ### Extensions to summary statistics
 The key parameter of interest in the multiple regression model are the marker effects. These can be obtained by solving an equation system similar to:
@@ -608,10 +599,10 @@ The summary statistics methods used require the construction of a reference LD c
 In the Bayesian multiple regression model the posterior density of the model parameters ($b$,$\sigma_b^2$,$\sigma_e^2$) depend on the likelihood of the data given the parameters and a prior probability for the model parameters:
 
 \begin{align}
-p(b,\sigma_b^2,\sigma_e^2y) \propto p(y|b,\sigma_b^2,\sigma_e^2)p(b|\sigma_b^2)p(\sigma_b^2)p(\sigma_e^2)
+p(b,\sigma_b^2,\sigma_e^2,y) \propto p(y|b,\sigma_b^2,\sigma_e^2)p(b|\sigma_b^2)p(\sigma_b^2)p(\sigma_e^2)
 \end{align}
 
-The prior density of marker effects,$p(b|\sigma_b^2)$, defines whether the model will induce variable selection and shrinkage or shrinkage only. Also, the choice of prior will define the extent and type of shrinkage induced. Ideally the choice of prior for the marker effect should reflect the genetic architecture of the trait, and will vary (perhaps a lot) across traits.
+The prior density of marker effects, $p(b|\sigma_b^2)$, defines whether the model will induce variable selection and shrinkage or shrinkage only. Also, the choice of prior will define the extent and type of shrinkage induced. Ideally the choice of prior for the marker effect should reflect the genetic architecture of the trait, and will vary (perhaps a lot) across traits.
 
 
 ### Prior distributions of model parameters
@@ -619,7 +610,7 @@ Most complex traits and diseases are likely highly polygenic, with hundreds to t
 
 
 ### Prior marker variance Bayes N {.unlisted .unnumbered}
-In the BayesN approach the prior for each marker effect follows a priori a normal distribution with a variance $\sigma_b^2$ which is constant across markers:
+In the Bayes N approach the prior for each marker effect follows a priori a normal distribution with a variance $\sigma_b^2$ which is constant across markers:
 
 \begin{align}
 p(b)=\prod_ip(b_i)
@@ -699,96 +690,26 @@ Bayesian linear regression methods use an iterative algorithm for estimating joi
 \newpage
 
 
-### Fit BayesN BLR model
+### Fit BLR models
+The different BLR models are implemented in the `qgg`-package in the function `gbayes()`, where the argument `method=` specifies which prior marker variance there should be used.
 
 ```{r,  eval=FALSE, echo=TRUE}
 fit <- gbayes( stat=stat, Glist=Glist, method="bayesN", nit=1000)
-grs <- gscore(Glist=Glist, stat=fit$stat)
-paN <- acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
-paN
+prs <- gscore(Glist=Glist, stat=fit$stat)
+paN <- acc(yobs=y[valid], ypred=prs[valid,], typeoftrait="binary")
 ```
 
-
-### Fit BayesA BLR model
-
-```{r,  eval=FALSE, echo=TRUE}
-fit <- gbayes( stat=stat, Glist=Glist, method="bayesA", nit=1000)
-grs <- gscore(Glist=Glist, stat=fit$stat)
-paA <- acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
-paA
-```
-
-<!-- ```{r,  eval=FALSE, echo=TRUE} -->
-<!-- plot(y=fit$stat[rownames(stat),"badj"], x=stat$b, -->
-<!--      xlab="Marginal Effect", -->
-<!--      ylab="Joint Effect", -->
-<!--      frame.plot=FALSE, main="Bayes A") -->
-<!-- ``` -->
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. Run the different BLR models (bayesN, bayesA, bayesC and bayesR).\newline 2. Compare the predictive performance of the BLR models with the C+T model (make figure).\newline 3. Compare the adjusted marker effects from the different BLR models and C+T with the un-adjusted marker effects.
 
 
-### Fit BayesC BLR model
-
-```{r,  eval=FALSE, echo=TRUE}
-fit <- gbayes( stat=stat, Glist=Glist, method="bayesC", nit=1000)
-grs <- gscore(Glist=Glist, stat=fit$stat)
-paC <- acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
-paC
-```
-
-
-<!-- ```{r,  eval=FALSE, echo=TRUE} -->
-<!-- plot(fit[[1]]$dm, -->
-<!--      xlab="Marker", -->
-<!--      ylab="Posterior inclusion probability", -->
-<!--      frame.plot=FALSE, main="Bayes C") -->
-<!-- ``` -->
-
-
-<!-- ```{r,  eval=FALSE, echo=TRUE} -->
-<!-- plot(y=fit$stat[rownames(stat),"badj"], x=stat$b, -->
-<!--      xlab="Marginal Effect", -->
-<!--      ylab="Joint Effect", -->
-<!--      frame.plot=FALSE, main="Bayes C") -->
-<!-- ``` -->
-
-
-
-### Fit BayesR BLR model
-
-```{r,  eval=FALSE, echo=TRUE}
-fit <- gbayes( stat=stat, Glist=Glist, method="bayesR", nit=1000)
-grs <- gscore(Glist=Glist, stat=fit$stat)
-paR <- acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
-paR
-```
-
-
-<!-- ```{r,  eval=FALSE, echo=TRUE} -->
-<!-- plot(fit[[1]]$dm, -->
-<!--      xlab="Marker", -->
-<!--      ylab="Marker class", -->
-<!--      frame.plot=FALSE, ylim=c(0,3), main="Bayes R") -->
-<!-- abline(h=1, lty=2, col=2, lwd=2) -->
-<!-- abline(h=2, lty=2, col=2, lwd=2) -->
-<!-- abline(h=3, lty=2, col=2, lwd=2) -->
-<!-- ```` -->
-
-<!-- ```{r,  eval=FALSE, echo=TRUE} -->
-<!-- plot(y=fit$stat[rownames(stat),"badj"], x=stat$b, -->
-<!--      xlab="Marginal Effect", -->
-<!--      ylab="Joint Effect", -->
-<!--      frame.plot=FALSE, main="Bayes R") -->
-<!-- ```` -->
-
-```{r,  eval=FALSE, echo=TRUE}
+<!--```{r,  eval=FALSE, echo=TRUE}
 auc <- c(paCT[-1,"AUC"],paN[,"AUC"],paA[,"AUC"],paC[,"AUC"],paR[,"AUC"])
 plot(auc, ylab="AUC")
 names(auc) <- c("C+T   1e-5", "C+T   1e-4", "C+T 0.001","C+T 0.005",
-                "C+T   0.01", "C+T   0.05", "C+T     0.1", "C+T     0.2",
-                "C+T     0.5",
-                "C+T     1.0","BayesN","BayesA","BayesC","BayesR")
+"C+T   0.01", "C+T   0.05", "C+T     0.1", "C+T     0.2",
+"C+T     0.5",
+"C+T     1.0","BayesN","BayesA","BayesC","BayesR")
 qgg:::plotForest(x=auc,sd=rep(0,length(auc)), reorder=FALSE, xlab="AUC", main="Accuracy")
-```
 
 
 \newpage
@@ -800,7 +721,7 @@ fitN <- gbayes( stat=stat, Glist=Glist, method="bayesN", nit=1000)
 fitA <- gbayes( stat=stat, Glist=Glist, method="bayesA", nit=1000)
 fitC <- gbayes( stat=stat, Glist=Glist, method="bayesC", nit=1000)
 fitR <- gbayes( stat=stat, Glist=Glist, method="bayesR", nit=1000)
-````
+```
 
 
 ## Compare shrinkage
@@ -834,4 +755,5 @@ legend("top", legend = c("Bayes R", "C+T (P = 0.001)"),
        col = c(4,2), pch = c(4,2), bty = "n",
        text.col = "black",
        horiz = F)
-```
+``` 
+-->
