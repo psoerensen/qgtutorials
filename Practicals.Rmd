@@ -205,7 +205,7 @@ In this practical we will perform polygenic risk scoring based on simulated data
 
 ### Load required packages: 
 \vspace{-5truemm}
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 library(data.table)
 library(tools)
 ```
@@ -218,7 +218,7 @@ dir.create("C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course")
 
 ### Set working directory for the downloaded files:
 \vspace{-5truemm}
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 setwd("C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course")
 ```
 
@@ -268,29 +268,29 @@ download.file( url=url, destfile="human.covar")
 One of the first thing to do is to prepare the phenotypic data used in the analysis. The goal is to understand the variables, how many records the data set contains, how many missing values, what is the variable structure, what are the variable relationships and more. 
 Several commands/functions can be used (e.g. `str`, `head`, `dim`, `table`,`is.na`). 
 
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 library(data.table)
 ```
 
 ### Read phenotype and covariables data files
 \vspace{-5truemm}
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 pheno <- fread(input="C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.pheno",data.table=FALSE)
 ```
 
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 covar <- fread(input="C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.covar",data.table=FALSE)
 ```
 
 
 ### How many observations and which variables do we have in the data set? 
 To get a fast overview of the data set you are working with you can use the str or head functions:
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 str(pheno)
 str(covar)
 ```
 
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 head(pheno)
 head(covar)
 ```
@@ -298,7 +298,7 @@ head(covar)
 
 ### How is the phenotype distributed? 
 Define the response variable
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 y <- pheno[,3]
 names(y) <- pheno[,1]
 ```
@@ -310,7 +310,7 @@ The exploratory data analysis is the process of analyzing and visualizing the da
 
 This can be done using the `glm` function:
   
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 fit <- glm( y ~ V3+V4+V5+V6+V7+V8+V9+V10+V11+V12+V13+V14, data=covar, family=binomial(link="logit"))
 summary(fit)
 ```
@@ -326,19 +326,19 @@ The exploration (including quality control) of phenotypes and covariables is a k
 The preparation (including quality control) of genotype data is a key step in quantitative genetic analyses. The function `gprep` reads genotype information from binary PLINK files, and creates the Glist object that contains general information about the genotypes such as allele frequencies, homozygozity, missingnes,  number of individuals etc..
 
 
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 library(qgg)
 ```
 
 ### Summarize genotype information using the gprep 
 \vspace{-5truemm}
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 bedfiles <- "C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.bed"
 bimfiles <- "C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.bim"
 famfiles <- "C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.fam"
 ```
 
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 Glist <- gprep(study="Example",
                bedfiles=bedfiles,
                bimfiles=bimfiles,
@@ -348,7 +348,7 @@ names(Glist)
 
 The output from gprep (Glist) has a list structure that contains information about the genotypes in the binary file. Glist is required for downstream analyses of large-scale genetic data. Typically, the Glist is prepared once, and saved as an *.Rdata-file. To explore the content of the Glist object:
 
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 str(Glist)
 ```
 
@@ -361,7 +361,7 @@ str(Glist)
 ### Quality control of genotype data
 The genotype data must be quality controlled, e.g. removing markers with low genotyping rate, low minor allele frequency, out of Hardy-Weinberg Equilibrium. The function `gfilter` can be used for filtering of markers based:
 \vspace{-5truemm}
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 rsids <-  gfilter( Glist = Glist,
                    excludeMAF=0.05,
                    excludeMISS=0.05,
@@ -384,14 +384,14 @@ One of the first step in PRS analyses is to generate or obtain GWAS summary stat
 
 ### Define the response variable
 \vspace{-5truemm}
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 y <- pheno[,3]
 names(y) <- pheno[,1]
 ```
 
 ### Create design matrix for the explanatory variables
 \vspace{-5truemm}
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 X <- model.matrix(~V3+V4+V5+V6+V7+V8+V9+V10+V11+V12+V13+V14, data=covar)
 rownames(X) <- covar$V1
 X <- X[names(y),]
@@ -400,7 +400,7 @@ sum(names(y)%in%rownames(X))
 
 ### Define training and validation samples
 \vspace{-5truemm}
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 train <- sample(names(y),4000)
 valid <- names(y)[!names(y)%in%train]
 ```
@@ -414,18 +414,18 @@ The function `glma` can be used for compution of summary statistics.
 
 ### Computation of summary statistics:
 \vspace{-5truemm}
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 stat <- glma(y=y[train], X=X[train,], Glist=Glist)
 ```
 
 ### Explore the output (stat) form the `glma` function:
 \vspace{-5truemm}
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 dim(stat)
 head(stat)
 ```
 
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 plot(-log10(stat$p), frame.plot=FALSE,ylab="-log10(P)", xlab="Markers", type="l")
 ```
 
@@ -441,13 +441,13 @@ The function `gprep` can be used to compute sparse LD matrices which are stored 
 
 ### Define filenames for the sparse LD matrices. 
 \vspace{-5truemm}
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 ldfiles <- "C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.ld"
 ```
 
 ### Compute sparse LD using only the filtered rsids
 \vspace{-5truemm}
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 Glist <- gprep( Glist,
                 task="sparseld",
                 msize=1000,
@@ -459,7 +459,7 @@ Glist <- gprep( Glist,
 
 <!-- ### Quality control of summary statistics: -->
 <!-- \vspace{-5truemm} -->
-<!-- ```{r,  eval=TRUE, echo=TRUE} -->
+<!-- ```{r,  eval=FALSE, echo=TRUE} -->
 <!-- stat <- qcStat(Glist=Glist, stat=stat) -->
 <!-- ``` -->
 
@@ -474,18 +474,18 @@ Polygenic risk scoring using clumping and thresholding is a relative simple and 
 
 ### Clumping and thresholding
 Clumping can be performed using the adjStat in `qgg`. The input to the function is the summary statistic (stat), information about sparse LD matrices which is in the Glist, a threshold of linkage disequilibrium (e.g. $r^2=0.9$) and thresholds for p-values (threshold = c(0.001, 0.05)):
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 threshold <- c(0.00001, 0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.5,1)
 statAdj <- adjStat(Glist=Glist, stat=stat, r2=0.9, threshold=threshold)
 ```
 
 Explore the output (statAdj) using the `head`, `tail` and `summary` functions:
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 head(statAdj)
 ```
 
 To better understand what the clumping procedure is doing we can plot the udadjusted marker effect (from the stat data frame) against the adjusted marker effects (from the the statAdj data frame)  
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 plot( y=statAdj[rownames(stat),"b_0.001"], col=1,
       x=stat$b,
       xlab="Marginal Effect",
@@ -500,14 +500,14 @@ The polygenic risk score (PRS) is calculated as:
 			$$PRS=\sum_{i=1}^mX_i  b_i$$
 where $X_i$ is the genotype vector, and $b_i$ the weight of the i’th single genetic marker.
 The PRS are computed using the `gscore` function. The input to the function is the adjusted summary statistic (adjStat), information about genotypes which are in the Glist:
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 grs <- gscore(Glist=Glist,stat=statAdj)
 ```
 
 
 ### Explore polygenic scores
 It is always important to explore the PRS computed.  
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 head(grs)
 cor(grs)
 layout(matrix(1:4,ncol=2, byrow=TRUE))
@@ -530,7 +530,7 @@ hist(grs[valid,"b_0.001"])
 ### Evalute polygenic scores 
 The p-value threshold that provides the "best-fit" PRS under the C+T method is usually unknown. To approximate the "best-fit" PRS, we can perform a regression between PRS calculated at a range of p-value thresholds and then select the PRS that explains the highest phenotypic variance or has the highest AUC. This can be achieved using `acc` function as follows:
 
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 paCT <- acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
 paCT
 ```
@@ -541,7 +541,7 @@ paCT
 ### Plot polygenic scores 
 For visualization, the GRS were divided into percentiles, and the disease prevalence within each bin was computed; the OR for each percentile was computed adjusting for sex, age, UKB assessment center, and the first 10 genetic principal components, and the OR was expressed relative to the 50-th percentile.
 
-```{r,  eval=TRUE, echo=TRUE}
+```{r,  eval=FALSE, echo=TRUE}
 yobs <- y[valid]
 ypred <- grs[names(y[valid]),which.max(paCT[,"AUC"])]
 
@@ -718,7 +718,7 @@ paA <- acc(yobs=y[valid], ypred=grs[valid,], typeoftrait="binary")
 paA
 ```
 
-<!-- ```{r,  eval=TRUE, echo=TRUE} -->
+<!-- ```{r,  eval=FALSE, echo=TRUE} -->
 <!-- plot(y=fit$stat[rownames(stat),"badj"], x=stat$b, -->
 <!--      xlab="Marginal Effect", -->
 <!--      ylab="Joint Effect", -->
@@ -736,7 +736,7 @@ paC
 ```
 
 
-<!-- ```{r,  eval=TRUE, echo=TRUE} -->
+<!-- ```{r,  eval=FALSE, echo=TRUE} -->
 <!-- plot(fit[[1]]$dm, -->
 <!--      xlab="Marker", -->
 <!--      ylab="Posterior inclusion probability", -->
@@ -744,7 +744,7 @@ paC
 <!-- ``` -->
 
 
-<!-- ```{r,  eval=TRUE, echo=TRUE} -->
+<!-- ```{r,  eval=FALSE, echo=TRUE} -->
 <!-- plot(y=fit$stat[rownames(stat),"badj"], x=stat$b, -->
 <!--      xlab="Marginal Effect", -->
 <!--      ylab="Joint Effect", -->
@@ -763,7 +763,7 @@ paR
 ```
 
 
-<!-- ```{r,  eval=TRUE, echo=TRUE} -->
+<!-- ```{r,  eval=FALSE, echo=TRUE} -->
 <!-- plot(fit[[1]]$dm, -->
 <!--      xlab="Marker", -->
 <!--      ylab="Marker class", -->
@@ -773,7 +773,7 @@ paR
 <!-- abline(h=3, lty=2, col=2, lwd=2) -->
 <!-- ```` -->
 
-<!-- ```{r,  eval=TRUE, echo=TRUE} -->
+<!-- ```{r,  eval=FALSE, echo=TRUE} -->
 <!-- plot(y=fit$stat[rownames(stat),"badj"], x=stat$b, -->
 <!--      xlab="Marginal Effect", -->
 <!--      ylab="Joint Effect", -->
