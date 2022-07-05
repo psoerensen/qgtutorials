@@ -1,6 +1,6 @@
 ---
 title: 'Practical in Polygenic Risk Scoring using the R package qgg'
-author: "Palle Duun Rohde, Izel Fourie Sørensen & Peter Sørensen"
+author: "..... & Peter Sørensen"
 date: "`r Sys.Date()`"
 bibliography: qg2021.bib
 biblio-style: apalike
