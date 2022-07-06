@@ -15,6 +15,7 @@ output:
       in_header: mathjax_header.html
 ---
 
+
 ```{r setup, include=FALSE} 
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, tidy.opts = list(width.cutoff = 70), tidy = TRUE)
 eval <- FALSE
@@ -397,7 +398,7 @@ rsids <-  gfilter( Glist = Glist,
 
 One of the first step in PRS analyses is to generate or obtain GWAS summary statistics. Ideally these will correspond to the most powerful GWAS results available on the phenotype under study. In this example, we will use GWAS on the simulated disease phenotype. We will use only a subset of the data (training data) in the GWAS and the remaining subset of the data (validation data) to assess the accuracy of the polygenic risk scores.   
 
-\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. What is a GWAS\newline 2. What are GWAS summary statistics?
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. What are GWAS summary statistics?
 
 ### Define the response variable
 \vspace{-1truemm}
@@ -437,7 +438,7 @@ dim(stat)
 head(stat)
 ```
 
-\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. Present the results from the GWAS as a Manhattan plot.
+\textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. Present the results from the GWAS as a Manhattan plot.\newline 2. The `glma` function fit a linear regression model to the data - is that a good idea?
 
 
 \newpage
@@ -454,15 +455,15 @@ The function `gprep` can be used to compute sparse LD matrices which are stored 
 ldfiles <- "C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\human.ld"
 ```
 
-### Compute sparse LD using only the filtered rsids
+### Compute sparse LD using only the filtered rsids (slow unless R is linked to a fast BLAS!)
 \vspace{-5truemm}
 ```{r,  eval=eval, echo=TRUE}
-Glist <- gprep( Glist,
+system.time(Glist <- gprep( Glist,
                 task="sparseld",
                 msize=1000,
                 rsids=rsids,
                 ldfiles=ldfiles,
-                overwrite=TRUE)
+                overwrite=TRUE))
 saveRDS(Glist, file="C:\\Users\\au223366\\Dropbox\\Projects\\Summer_course\\Glist_sparseLD_1k.RDS", compress=FALSE)
 ```
 
@@ -534,6 +535,7 @@ The $P$-value threshold that provides the "best-fit" PRS under the C+T method is
 
 ```{r,  eval=eval, echo=TRUE}
 paCT <- acc(yobs=y[valid], ypred=prs[valid,], typeoftrait="binary")
+paCT
 ```
 
 \textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. Make a plot that compares the prediction accuracies using the different $P$-value thresholds.
