@@ -323,6 +323,11 @@ names(y) <- pheno[,1]
 
 \textcolor{blue}{\Huge \textbf{!}} \textcolor{blue}{{\bf Task for you\\}}1. Use the histogram and boxplot functions to visualize the distribution of the trait/covariables.
 
+```{r,  eval=eval, echo=TRUE}
+hist(y)
+boxplot(covar[,4]~y)
+```
+
 
 ### Which factors or covariated influence the phenotype? 
 The exploratory data analysis is the process of analyzing and visualizing the data to get a better understanding of the data. It is not a formal statistical test. Which factors should we include in the statistical model? To best answer these question we can fit a logistic regression model that include these factors in the model. 
