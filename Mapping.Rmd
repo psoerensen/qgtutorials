@@ -1,0 +1,169 @@
+---
+title: 'Evaluation of Fine Mapping methods using the R package qgg'
+author: "Merina Shrestha, Palle Duun Rohde & Peter Sørensen"
+date: "`r Sys.Date()`"
+bibliography: qg2021.bib
+biblio-style: apalike
+link-citations: yes
+output:
+  pdf_document:
+    dev: png
+    includes:
+      in_header: preamble.tex
+  html_document:
+    includes:
+      in_header: mathjax_header.html
+---
+
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, tidy.opts = list(width.cutoff = 70), tidy = TRUE)
+eval <- FALSE
+echo_solution <- FALSE
+```
+
+# Introduction
+
+Comparing finemapping methods using Bayesian Linear regression models
+
+
+#### Software used: 
+To follow the practical, you will need the following installed (see installation guides below):
+
+* R (version $\geq$ 4.2)
+* qgg (version $\geq$ 1.1.1)
+
+
+### Input data/objects used for finemapping in the `qgg` package
+All functions in `qgg` used for finemapping based on BLR models relies on a simple data infrastructure that takes five main input: 
+
+`y`:\qquad \quad vector, matrix or list of phenotypes\newline
+`X`:\qquad \quad design matrix for non-genetic factors \newline
+`W`:\qquad \quad matrix of centered and scaled genotypes (in memory) \newline
+`Glist`:\quad list structure providing information on genotypes, sparse LD, and LD scores (on disk) \newline
+`stat`:\quad data frame with marker summary statistics \newline
+
+
+### Load necessary packages
+```{r,  eval=TRUE, echo=TRUE}
+library(qgg)
+```
+
+
+### Prepare genotype information in Glist format
+\vspace{-1truemm}
+```{r,  eval=TRUE, echo=TRUE}
+bedfiles <- system.file("extdata", paste0("sample_chr",1:2,".bed"), package = "qgg")
+bimfiles <- system.file("extdata", paste0("sample_chr",1:2,".bim"), package = "qgg")
+famfiles <- system.file("extdata", paste0("sample_chr",1:2,".fam"), package = "qgg")
+
+Glist <- gprep(study="1000G", bedfiles=bedfiles, bimfiles=bimfiles, famfiles=famfiles)
+
+```
+
+### Filter markers
+\vspace{-1truemm}
+```{r,  eval=TRUE, echo=TRUE}
+rsids <-  gfilter(Glist = Glist, excludeMAF=0.05, excludeMISS=0.05, excludeHWE=1e-12) 
+```
+
+### Compute sparse LD matrices and ldscores
+\vspace{-1truemm}
+```{r,  eval=TRUE, echo=TRUE}
+ldfiles <- paste0("C:\\Users\\au223366\\Dropbox\\Projects\\qgg2.0\\1000G\\chr",1:2,".ld")
+Glist <- gprep(Glist, task="sparseld", msize=200, rsids=rsids, ldfiles=ldfiles, overwrite=TRUE)
+```
+
+### Simulate data
+\vspace{-1truemm}
+```{r,  eval=TRUE, echo=TRUE}
+sim <- gsim(Glist=Glist,nt=1)
+W <- getG(Glist=Glist, chr=1, rsids=Glist$rsidsLD[[1]], scale=TRUE)
+sim <- gsim(W=W,nt=1)
+
+```
+
+
+### Compute summary statistics (e.g. fit single marker regression model)
+\vspace{-1truemm}
+```{r,  eval=TRUE, echo=TRUE}
+stat <- glma(y=sim$y, Glist=Glist)  
+```
+
+
+### BLR model analysis based on summary statistics
+\vspace{-1truemm}
+```{r,  eval=TRUE, echo=TRUE}
+fit <- gbayes( stat=stat, Glist=Glist, method="bayesC", nit=1000)
+plot(fit[[1]]$dm)
+```
+
+### Mapping based on stat defined by variance per marker
+\vspace{-1truemm}
+```{r,  eval=TRUE, echo=TRUE}
+# extract marker variance
+stat <- (fit$stat$bm^2)*fit$stat$af*(1-fit$stat$af)*2
+names(stat) <- rownames(fit$stat)
+
+# define sets
+msize <- 20
+sets <- qgg:::splitWithOverlap(names(stat), msize, msize-1)
+
+# gsea using sum
+nperm <- 1000
+mma <- gsea(stat=stat,sets=sets, nperm=nperm)
+mma[mma[,"p"]==0,"p"] <- 0.1/nperm
+head(mma)
+plot(mma[,"stat"],-log10(mma[,"p"]))
+```
+
+### Mapping based on stat defined by posterior inclusion probability
+\vspace{-1truemm}
+```{r,  eval=TRUE, echo=TRUE}
+# extract pip
+stat <- fit[[1]]$dm
+names(stat) <- names(fit[[1]]$bm)
+
+# define sets
+msize <- 20
+sets <- qgg:::splitWithOverlap(names(stat), msize, msize-1)
+
+# gsea using sum
+nperm <- 1000
+mma <- gsea(stat=stat,sets=sets, nperm=nperm)
+mma[mma[,"p"]==0,"p"] <- 1/nperm
+head(mma)
+plot(-log10(mma[,"p"]))
+plot(mma[,"stat"],-log10(mma[,"p"]))
+```
+
+### Mapping based on credible sets
+Bayesian methods can be used to determine the credible set, the minimum set 
+of SNPs that contains all causal SNPs with probability alpha. 
+When assuming only one causal SNP, alpha is the sum of PIPs for SNPs in a set. 
+This means that an alpha credible set is equivalent to ranking SNPs from largest to smallest 
+PIPs and taking the cumulative sum of PIPs until it is at least alpha (https://doi.org/10.1038/s41576-018-0016-z).
+
+\vspace{-1truemm}
+```{r,  eval=TRUE, echo=TRUE}
+# extract pip
+stat <- fit[[1]]$dm
+names(stat) <- names(fit[[1]]$bm)
+
+# define sets
+msize <- 20
+sets <- qgg:::splitWithOverlap(names(stat), msize, msize-1)
+
+# compute credible sets 
+alpha <- 0.9
+cs <-sapply(sets,function(x){
+  x <- x[x%in%names(stat)]
+  x <- stat[x]
+  x <- sort(x, decreasing=TRUE)
+  x <- cumsum(x)
+  sum(x>alpha)
+})
+str(cs)
+plot(cs)
+```
+
