@@ -1,0 +1,257 @@
+---
+title: 'Brief Introduction to R package qgg using 1000G data'
+author: "Palle Duun Rohde, Izel Fourie Sørensen, & Peter Sørensen"
+date: "`r Sys.Date()`"
+bibliography: qg2021.bib
+biblio-style: apalike
+link-citations: yes
+output:
+  bookdown::pdf_document2:
+    dev: png
+    includes:
+      in_header: preamble.tex
+  html_document:
+    includes:
+      in_header: mathjax_header.html
+---
+
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, tidy.opts = list(width.cutoff = 70), tidy = TRUE)
+eval <- TRUE
+message <- TRUE
+```
+
+# Introduction
+
+The practical is based on the R package `qgg` (Rohde et al. (2021, 2022)). This package provides an infrastructure for efficient processing of large-scale genetic and phenotypic data including core functions for: 
+
+* fitting linear mixed models 
+* constructing genetic relationship matrices 
+* estimating genetic parameters (heritability and correlation) 
+* performing genomic prediction and genetic risk profiling 
+* single or multi-marker association analyses
+
+`qgg` handles large-scale data by taking advantage of:
+
+* multi-core processing using openMP
+* multithreaded matrix operations implemented in BLAS libraries (e.g., OpenBLAS, ATLAS or MKL)
+* fast and memory-efficient batch processing of genotype data stored in binary files (i.e., PLINK bedfiles)
+
+You can install qgg from CRAN with:
+
+```{r,  eval=FALSE, echo=TRUE}
+install.packages("qgg")
+```
+
+The most recent version of `qgg` can be obtained from github:
+
+```{r,  eval=FALSE, echo=TRUE}
+library(devtools)
+devtools::install_github("psoerensen/qgg")
+```
+
+## Input data/objects commonly used in the `qgg` package  {.unlisted .unnumbered}
+All functions in `qgg` used for analysis of complex traits relies on a simple data infrastructure that takes the following main input: 
+
+`y`:\qquad \quad vector, matrix or list of phenotypes\newline
+`X`:\qquad \quad design matrix for non-genetic factors \newline
+`W`:\qquad \quad matrix of centered and scaled genotypes (in memory) \newline
+`Glist`:\quad list structure providing information on genotypes, sparse LD, and LD scores (on disk) \newline
+`stat`:\quad data frame with marker summary statistics \newline
+`sets`:\quad list of sets with marker ids \newline
+`ids`:\quad vector of ids of individuals \newline
+`rsids`:\quad vector marker marker ids \newline
+
+## Linking R to multi-threaded math libraries {.unlisted .unnumbered}
+The multi-core machines of today offer parallel processing power. To take advantage of this, R should be linked to multi-threaded math libraries (e.g. MKL/OpenBLAS/ATLAS). These libraries make it possible for many common R operations, such as matrix multiplication/inversion/decomposition, and some higher-level matrix operations, to compute in parallel and use all of the processing power available to reduce computation times.
+
+This can make a huge difference in computation times: https://mran.microsoft.com/documents/rro/multithread#mt-bench
+
+For Windows/Linux users it is possible to install Microsoft R Open is the enhanced distribution of R from Microsoft Corporation: https://mran.microsoft.com/open 
+
+For MAC users the ATLAS (Automatically Tuned Linear Algebra Software) library can be installed from here: https://ports.macports.org/port/atlas/
+
+
+\newpage
+
+# Prepare genotype data
+The preparation (including quality control) of genotype data is a key step in quantitative genetic analyses. 
+
+```{r,  eval=eval, echo=TRUE}
+library(qgg)
+library(data.table)
+library(corrplot)
+```
+
+In this example we will use the 1000G data downloaded using the following commands:
+
+```{r,  eval=FALSE, echo=TRUE}
+url <- "https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_plinkfiles.tgz" 
+dest <- "./1000G_Phase3_plinkfiles.tgz"
+download.file(url=url,dest=dest)
+cmd <- "tar -xvzf 1000G_Phase3_plinkfiles.tgz"
+system(cmd)
+```
+
+```{r,  eval=TRUE, echo=FALSE}
+Glist <- readRDS(file="C:\\Users\\au223366\\Dropbox\\2021 ODIN T2D\\1000G\\Glist_MAF1_LD1K_1000G.rds")
+```
+
+## Summarize genotype information in PLINK files {.unlisted .unnumbered} 
+The function `gprep()` reads genotype information from binary PLINK files, and creates the `Glist` object that contains general information about the genotypes: 
+```{r,  eval=FALSE, echo=TRUE}
+bedfiles <- paste("/mydir/1000G.EUR.QC.",1:22,".bed",sep="")
+bimfiles <- paste("/mydir/1000G.EUR.QC.",1:22,".bim",sep="")
+famfiles <- paste("/mydir/1000G.EUR.QC.",1:22,".fam",sep="")
+
+Glist <- gprep(study="1000G",
+               bedfiles=bedfiles,
+               bimfiles=bimfiles,
+               famfiles=famfiles)
+names(Glist)
+```
+The output from `gprep()` (`Glist`) has a list structure that contains information about the genotypes in the binary file. `Glist` is required for downstream analyses provided in the qgg package. Typically, the `Glist` is prepared once, and saved as an *.RDS-file. 
+```{r,  eval=FALSE, echo=TRUE}
+saveRDS(Glist, file="Glist.RDS", compress=FALSE)
+```
+
+
+## Quality control of genotype data {.unlisted .unnumbered} 
+In general it advisable to perform quality control of the genotype data. The quality control include removing markers with low genotyping rate, low minor allele frequency, not in Hardy-Weinberg Equilibrium. The function `gfilter()` can be used for filtering of markers:
+```{r,  eval=FALSE, echo=TRUE, message=message}
+rsidsQC <-  gfilter( Glist = Glist,
+                   excludeMAF=0.01,
+                   excludeMISS=0.05,
+                   excludeHWE=1e-12,
+                   excludeCGAT=TRUE,
+                   excludeINDEL=TRUE,
+                   excludeDUPS=TRUE,
+                   excludeMHC=FALSE)
+```
+
+\newpage
+
+# Compute sparse LD matrices
+A number of methods used in the genetic analyses of complex traits (e.g. Bayesian linear regression analyses, genomic risk scoring and LD score regression) are based on summary statistics and require the construction of a reference linkage disequilibrium (LD) correlation matrix. The LD matrix corresponds to the correlation between the genotypes of genetic variants across the genome. Here we use a sparse LD matrix approach using a fixed window approach (e.g. number of markers, 1 cM or 1000kb), which sets LD correlation values outside this window to zero. 
+
+The function `gprep` can be used to compute sparse LD matrices which are stored on disk. The $r^2$ metric used is the pairwise correlation between markers (allele count alternative allele) in a specified region of the genome. Although this step can be slow unless R is linked to a fast BLAS it is typically only done once (or a few times). 
+```{r,  eval=FALSE, echo=TRUE, message=message}
+# Define filenames for the sparse LD matrices 
+nchr <- Glist$nchr
+ldfiles <- paste0(getwd(),"/sample_chr",1:nchr,".ld")
+
+# Compute sparse LD matrices using the filtered rsids only
+Glist <- gprep( Glist,
+                task="sparseld",
+                msize=1000,
+                rsids=rsidsQC,
+                ldfiles=ldfiles,
+                overwrite=TRUE)
+
+# Save the updated Glist object
+saveRDS(Glist, file="Glist.RDS", compress=FALSE)
+```
+
+## Get the sparse LD matrix for a chromsome {.unlisted .unnumbered}
+The ´getLD´ function can be used to extract the sparse LD matrix stored on disk. Here we extract the sparse LD for chromosome 1 and plot the mean r2 in a genomic window around the index marker illustrating that marker in close proximity with the index marker have (on average) a higher r2 as compared to distantly located markers:
+```{r,  eval=TRUE, echo=TRUE}
+ld <- getLD(Glist,chr=1)
+# Plot mean r2 f
+plot(y=rowMeans(ld**2), x=rownames(ld), frame.plot=FALSE, ylab="r2",xlab="position", main="Chr1")
+```
+
+## Get the LD scores for a chromosome {.unlisted .unnumbered}
+The ld scores quantify the degree of linkage disequilibrium in a genomic region and are used LD score regression. They can be extracted from the Glist object in the following way:
+```{r,  eval=TRUE, echo=TRUE}
+layout(matrix(1:2,ncol=2))
+plot(Glist$ldscores[[1]],frame.plot=FALSE, ylab="LD score",xlab="position", main="Chr1", cex=0.1, col="grey")
+plot(Glist$ldscores[[2]],frame.plot=FALSE, ylab="LD score",xlab="position", main="Chr2", cex=0.1, col="grey")
+```
+
+## Get LD sets for chromosome 1 {.unlisted .unnumbered}
+It can be useful to identify markers linked in a genomic regions. The ´getLDsets´ function can be used to extract linked marker based on a LD threshold such as r2=0.25:
+```{r,  eval=TRUE, echo=TRUE}
+sets <- getLDsets(Glist=Glist, chr=1, r2=0.5)
+str(sets, list.len=5)
+```
+
+
+\newpage
+
+# Quality control of external GWAS summary statistic
+Quality control is a critical step for working with summary statistics (in particular
+for external). Processing and quality control of GWAS summary statistics includes:
+
+- map marker ids (rsids/cpra (chr, pos, ref, alt)) to LD reference panel data in Glist 
+- check effect allele (ea)
+- check effect allele frequency (eaf)
+- thresholds for MAF and HWE
+- exclude INDELS, CG/AT and MHC region
+- remove duplicated marker ids
+- check which build version
+- check for concordance between marker effect and LD data
+
+The ´qcStat´ function can be used for processing of summary statistics is 
+available in our qgg package. 
+
+```{r,  eval=TRUE, echo=TRUE, message=FALSE}
+# Prepare T2DM summary statistics used in GSEA
+fname_stat <- "C:\\Users\\au223366\\Dropbox\\Projects\\balder\\Mahajan.NatGenet2018b.T2D-noUKBB.European.txt"
+stat <- fread(fname_stat, data.table=FALSE)
+head(stat)
+dim(stat)
+
+# check column names of original data
+colnames(stat)
+
+# subset original data by selecting the column needed for downstream analysis
+stat <- stat[, c("SNP","Chr","Pos","EA","NEA","EAF","Beta","SE","Pvalue")]
+
+# rename column names of the selected data
+colnames(stat) <- c("marker","chromosome", "position", "effect_allele", "non_effect_allele", 
+                   "effect_allele_freq","effect", "effect_se", "effect_p")
+
+# QC of summary stat and map to 1000G data
+stat <- qcStat(Glist=Glist,stat=stat)
+dim(stat)
+head(stat)
+```
+
+
+\newpage
+
+# LD Score Regression 
+
+```{r,  eval=TRUE, echo=TRUE}
+# Effective population size
+ncase <- 74124
+ncontrol <- 824006
+ntotal <- ncase+ncontrol
+pcase <- ncase/(ncase+ncontrol)
+neff <- ntotal*pcase*(1-pcase)
+
+# LDSC analysis
+h2 <- ldsc(Glist=Glist, stat=stat, n=neff, what="h2")
+h2
+```
+
+\newpage
+
+# Gene Set Enrichment Analysis
+
+```{r,  eval=TRUE, echo=TRUE}
+# Adjust summary statistics using clumping and p-value thresholding
+statAdj <- adjStat(stat=stat, Glist=Glist, r2=0.9,
+                   threshold=c(0.00001,0.0001,0.001,0.01,0.05,0.1,0.5,0.7,0.9,0.95))
+
+# Marker sets defined by chromosomes
+sets <- Glist$rsidsLD
+
+# Gene set enrichment analysis
+setstat <- gsea(stat = statAdj, sets = sets)
+setstat
+
+corrplot(-log10(setstat$p), is.corr=FALSE)
+
+```
