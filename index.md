@@ -20,16 +20,3 @@ consist of phenotypes for traits related to growth and obesity (e.g. body weight
 pedigree information, and genetic marker data.  
 [Practicals_mouse_example](https://psoerensen.github.io/qgtutorials/Practicals_mouse_example.pdf)  
 
-
-Notes:  
-[Quantitative Genetics Theory](https://psoerensen.github.io/qgnotes/Quantitative_Genetics_Theory.pdf)  
-[Estimation of Genetic Predisposition](https://psoerensen.github.io/qgnotes/Estimation_of_Genetic_Predisposition.pdf)  
-[Estimation of Genetic Parameters](https://psoerensen.github.io/qgnotes/Estimation_of_Genetic_Parameters.pdf)  
-[BLUP](https://psoerensen.github.io/qgnotes/BLUP.pdf)  
-[REML](https://psoerensen.github.io/qgnotes/REML.pdf)  
-[GSEA](https://psoerensen.github.io/qgnotes/GSEA.pdf)  
-[LMM](https://psoerensen.github.io/qgnotes/LMM.pdf)  
-[BLR](https://psoerensen.github.io/qgnotes/BLR.pdf)  
-
-
-
