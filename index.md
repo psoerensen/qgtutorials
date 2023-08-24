@@ -22,9 +22,9 @@ pedigree information, and genetic marker data.
 
 
 Notes:  
-[Quantitative Genetics Theory](https://psoerensen.github.io/qgnotes/Quantitative-Genetics-Theory.pdf)  
-[Estimation of Genetic Predisposition](https://psoerensen.github.io/qgnotes/Estimation-of-Genetic-Predisposition.pdf)  
-[Estimation of Genetic Parameters](https://psoerensen.github.io/qgnotes/Estimation-of-Genetic-Parameters.pdf)  
+[Quantitative Genetics Theory](https://psoerensen.github.io/qgnotes/Quantitative_Genetics_Theory.pdf)  
+[Estimation of Genetic Predisposition](https://psoerensen.github.io/qgnotes/Estimation_of_Genetic_Predisposition.pdf)  
+[Estimation of Genetic Parameters](https://psoerensen.github.io/qgnotes/Estimation_of_Genetic_Parameters.pdf)  
 [BLUP](https://psoerensen.github.io/qgnotes/BLUP.pdf)  
 [REML](https://psoerensen.github.io/qgnotes/REML.pdf)  
 [GSEA](https://psoerensen.github.io/qgnotes/GSEA.pdf)  
