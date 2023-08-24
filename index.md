@@ -19,4 +19,3 @@ In this tutorial we will be analysing quantitative traits observed in a mice pop
 consist of phenotypes for traits related to growth and obesity (e.g. body weight, glucose levels in blood),
 pedigree information, and genetic marker data.  
 [Practicals_mouse_example](https://psoerensen.github.io/qgtutorials/Practicals_mouse_example.pdf)  
-
