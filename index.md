@@ -1,7 +1,7 @@
-This is a set of tutorials used for the qgg package.  
+This is a set of tutorials used for the qgg package:  
 
 
-This practical provides a brief introduction to R package qgg using small simulated data examples.  
+This tutorial provides a brief introduction to R package qgg using small simulated data examples.  
 [Practicals_brief_introduction](https://psoerensen.github.io/qgtutorials/Quick-tutorials-for-qgg-package.pdf)  
 
 
