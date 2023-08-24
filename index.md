@@ -1,4 +1,4 @@
 This is a set of tutorials used for the new version of the qgg package.  
-[Practicals_human_example](./Practicals_human_example.pdf)
-[Practicals_human_example_2](https://github.com/psoerensen/qgtutorials/raw/main/Practicals_human_example.pdf)
+[Practicals_human_example](./Practicals_human_example.pdf)  
+[Practicals_mouse_example](https://psoerensen.github.io/qgtutorials/Practicals_mouse_example.pdf)
 
